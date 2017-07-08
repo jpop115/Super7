@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Health : MonoBehaviour {
-    public float health = 100;    
-    public GameObject player;
+    public float health = 100;        
    
 	// Use this for initialization
 	void Start () {
@@ -25,11 +24,11 @@ public class Health : MonoBehaviour {
         }
     }
 
-    private void Respawn()
+    /*private void Respawn()
     {
         Debug.Log("Trying to Respawn");
         Instantiate(player, new Vector3(-0.24f, 3.23f, 0f), Quaternion.identity);
-    }
+    }*/
 
     public void TakeDamage(float damage)
     {

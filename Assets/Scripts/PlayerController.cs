@@ -3,62 +3,90 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
-    public float jumpSpeed = 10f;    
-    public float speed = 10f;
+    public float jumpSpeed = 10f;        
+    public float gravity = 20f;
+    public float moveSpeed = 10f;
+    public Transform groundCheck;
+    public LayerMask whatIsGround;
 
-    private Gun gun;
-    private Rigidbody2D rigidBody;
+    private float groundRadius = .4f;
+    private bool grounded = false;
+    private bool facingRight = true;
+    private Gun gun;    
     private bool jumped = false;
     private bool doubleJumped = false;
     private Health health;
+    private Vector3 moveDirection = Vector3.zero;
+    private Rigidbody2D rigidBody;
+    private Animator anim;
     // Use this for initialization
     void Start () {
         rigidBody = GetComponent<Rigidbody2D>();
         health = GetComponent<Health>();
         gun = GameObject.FindObjectOfType<Gun>();
+        anim = GetComponent<Animator>();
     }
-	
-	// Update is called once per frame
-	void Update () {
-        Move();        
-        Clamp();
-	}
+
+    // Update is called once per frame
+    private void Update()
+    {
+        CheckGrounded();
+        anim.SetFloat("vSpeed", rigidBody.velocity.y);
+        Move();
+        
+    }
+    
 
     private void Move()
     {
+        float move = Input.GetAxis("Horizontal");
+
+        anim.SetFloat("Speed", Mathf.Abs(move));
+        rigidBody.velocity = new Vector2(move * moveSpeed, rigidBody.velocity.y);
+
+        if (move > 0 && !facingRight)
+        {
+            Flip();
+        } else if (move < 0 && facingRight)
+        {
+            Flip();
+        }               
+
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            Jump();
+            Debug.Log("trying to jump");
+            anim.SetBool("Ground", false);            
+        }
+        
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Fire();
         }
-        if (Input.GetKey(KeyCode.RightArrow))
-        {
-            transform.Translate(Vector3.right * speed * Time.deltaTime);
-        }
-        if (Input.GetKey(KeyCode.LeftArrow))
-        {
-            transform.Translate(Vector3.left * speed * Time.deltaTime);
-        }
-        if (Input.GetKeyDown(KeyCode.UpArrow) && !jumped)
-        {
-            Jump();
-        }
-        else if (Input.GetKeyDown(KeyCode.UpArrow) && !doubleJumped && jumped)
-        {
-            DoubleJump();
-        }
+    }
+
+    private void Flip()
+    {
+        facingRight = !facingRight;
+        Vector3 theScale = transform.localScale;
+        theScale.x *= -1;
+        transform.localScale = theScale;
     }
 
     private void Fire()
     {
-        gun.FireGun();
+        if (facingRight) { gun.FireGun(10f); }
+        if(!facingRight) { gun.FireGun(-10f); }
+        anim.SetTrigger("isShooting");
     }
 
     private void Jump()
     {
         jumped = true;
-        rigidBody.velocity = new Vector3(0, jumpSpeed, 0);
+        rigidBody.AddForce(new Vector2(0f, jumpSpeed));
+        Debug.Log("trying to jump");
     }
-
+   
     private void DoubleJump()
     {
         doubleJumped = true;
@@ -67,6 +95,7 @@ public class PlayerController : MonoBehaviour {
 
     private void OnCollisionEnter2D (Collision2D collision)
     {
+        Debug.Log("on collision");
         
         if (collision.gameObject.GetComponent<Floor>())
         {
@@ -81,8 +110,14 @@ public class PlayerController : MonoBehaviour {
         {
             health.TakeDamage(10);
 
-            rigidBody.velocity = new Vector2(-5f, 3f);
+            //rigidBody.velocity = new Vector2(-5f, 3f);
         }
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Debug.Log("Collided");
+        moveDirection.y = 0;
     }
 
     void WallStick()
@@ -90,12 +125,9 @@ public class PlayerController : MonoBehaviour {
         //transform.position.y
     }
 
-    void Clamp()
+    private void CheckGrounded()
     {
-        Vector3 clampZRot;
-        
-        clampZRot = transform.eulerAngles;
-        clampZRot.z = Mathf.Clamp(transform.eulerAngles.z, 0f, 0f);
-        transform.eulerAngles = clampZRot;        
+        grounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, whatIsGround);
+        anim.SetBool("Ground", grounded);
     }
 }

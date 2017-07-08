@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class Gun : MonoBehaviour {
     public GameObject projectilePrefab;
-    GameObject projectile;
-    public float damage;
+    GameObject projectile;    
     
-    public void FireGun()
+    public void FireGun(float direction)
     {
         projectile = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
-        projectile.GetComponent<Rigidbody2D>().velocity = new Vector2(10f, 0f);
+        projectile.GetComponent<Rigidbody2D>().velocity = new Vector2(direction, 0f);
     }
+
+
 }
