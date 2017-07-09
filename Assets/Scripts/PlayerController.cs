@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour {
     public Transform groundCheck;
     public LayerMask whatIsGround;
 
-    private float groundRadius = .4f;
+    private float groundRadius = .2f;
     private bool grounded = false;
     private bool facingRight = true;
     private Gun gun;    
@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour {
     private Health health;
     private Vector3 moveDirection = Vector3.zero;
     private Rigidbody2D rigidBody;
-    private Animator anim;
+    private Animator anim;    
     // Use this for initialization
     void Start () {
         rigidBody = GetComponent<Rigidbody2D>();
@@ -31,9 +31,8 @@ public class PlayerController : MonoBehaviour {
     private void Update()
     {
         CheckGrounded();
-        anim.SetFloat("vSpeed", rigidBody.velocity.y);
-        Move();
-        
+        //anim.SetFloat("vSpeed", rigidBody.velocity.y);
+        Move();        
     }
     
 
@@ -52,13 +51,19 @@ public class PlayerController : MonoBehaviour {
             Flip();
         }               
 
-        if (Input.GetKeyDown(KeyCode.UpArrow))
+        if (Input.GetKeyDown(KeyCode.UpArrow) && grounded && !jumped)
         {
-            Jump();
-            Debug.Log("trying to jump");
+            Jump();            
             anim.SetBool("Ground", false);            
+        } else if (Input.GetKeyDown(KeyCode.UpArrow) && !doubleJumped )
+        {
+            DoubleJump();
         }
-        
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            Dash();
+        }
+
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Fire();
@@ -73,6 +78,11 @@ public class PlayerController : MonoBehaviour {
         transform.localScale = theScale;
     }
 
+    public bool WhichDirectionFace()
+    {
+        return facingRight;
+    }
+
     private void Fire()
     {
         if (facingRight) { gun.FireGun(10f); }
@@ -83,29 +93,32 @@ public class PlayerController : MonoBehaviour {
     private void Jump()
     {
         jumped = true;
-        rigidBody.AddForce(new Vector2(0f, jumpSpeed));
-        Debug.Log("trying to jump");
+        Debug.Log("Jumping");
+        rigidBody.velocity = new Vector2(0f, jumpSpeed);        
     }
    
     private void DoubleJump()
     {
         doubleJumped = true;
-        rigidBody.velocity = new Vector3(0, jumpSpeed, 0);
+        Debug.Log("Trying to double jump");
+        rigidBody.velocity = new Vector2(0f, jumpSpeed-3f);
+    }
+
+    private void Dash()
+    {
+        Vector2 target = new Vector2(transform.position.x + 2f,0f);
+        Vector2 startPosition;
+        float t = 0;
+        float timeToReachTarget = 5f;
+
+        startPosition = transform.position;
+        t += Time.deltaTime / timeToReachTarget;
+
+        transform.position = Vector2.Lerp(startPosition, target, t);        
     }
 
     private void OnCollisionEnter2D (Collision2D collision)
-    {
-        Debug.Log("on collision");
-        
-        if (collision.gameObject.GetComponent<Floor>())
-        {
-            jumped = false;
-            doubleJumped = false;            
-        }
-        if (collision.gameObject.GetComponent<Wall>())
-        {
-            jumped = false;
-        }
+    {        
         if (collision.gameObject.GetComponent<Enemy>())
         {
             health.TakeDamage(10);
@@ -113,12 +126,7 @@ public class PlayerController : MonoBehaviour {
             //rigidBody.velocity = new Vector2(-5f, 3f);
         }
     }
-
-    private void OnControllerColliderHit(ControllerColliderHit hit)
-    {
-        Debug.Log("Collided");
-        moveDirection.y = 0;
-    }
+        
 
     void WallStick()
     {
@@ -129,5 +137,10 @@ public class PlayerController : MonoBehaviour {
     {
         grounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, whatIsGround);
         anim.SetBool("Ground", grounded);
+        if (grounded)
+        {
+            jumped = false;
+            doubleJumped = false;
+        }
     }
 }
